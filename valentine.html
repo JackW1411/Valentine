@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Will you be my Valentine?</title>
+
+<style>
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: system-ui, Segoe UI, Arial, sans-serif;
+  background: rgb(255,245,250);
+  overflow-x: hidden;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+#card {
+  width: min(600px, 100%);
+  background: white;
+  border-radius: 22px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+  padding: 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#heartsTop {
+  font-size: 34px;
+  margin-bottom: 10px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  color: rgb(35,25,30);
+}
+
+#subtitle {
+  margin-top: 8px;
+  font-size: 16px;
+  color: rgba(35,25,30,0.75);
+}
+
+#stage {
+  position: relative;
+  margin-top: 22px;
+  height: 160px;
+  border-radius: 16px;
+  background: rgb(255,235,245);
+  overflow: hidden;
+}
+
+.btn {
+  font-size: 18px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.14);
+  user-select: none;
+  position: absolute;
+  top: 50%;
+  transform: translate(0,0);
+}
+
+#yesBtn {
+  background: rgb(255,70,120);
+  color: white;
+}
+
+#noBtn {
+  background: white;
+  color: rgb(70,40,50);
+}
+
+#comment {
+  margin-top: 14px;
+  font-size: 14px;
+  color: rgba(35,25,30,0.75);
+  min-height: 20px;
+}
+
+#counter {
+  font-size: 13px;
+  margin-top: 6px;
+  color: rgba(35,25,30,0.65);
+}
+
+#final {
+  display: none;
+  margin-top: 18px;
+  font-size: 16px;
+}
+
+#confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#usPixel {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
+  width: 230px;
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+#floatLayer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floatHeart {
+  position: absolute;
+  font-size: 30px;
+  animation: rise 4.2s linear forwards;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.12));
+}
+
+@keyframes rise {
+  from { transform: translateY(0) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  to { transform: translateY(-340px) scale(1.08); opacity: 0; }
+}
+</style>
+</head>
+
+<body>
+<div id="floatLayer"></div>
+
+<div id="app">
+  <div id="card">
+    <canvas id="confetti"></canvas>
+
+    <div id="heartsTop">💗 💞 💘</div>
+    <h1 id="title">Will you be my Valentine?</h1>
+    <p id="subtitle">Choose wisely 😌</p>
+
+    <div id="stage">
+      <button id="yesBtn" class="btn">Yes</button>
+      <button id="noBtn" class="btn">No</button>
+      <img id="usPixel" src="us-pixel.png" alt="us pixel art">
+    </div>
+
+    <p id="comment"></p>
+    <p id="counter">No attempts: 0</p>
+    <p id="final">Screenshot this and send it to me 💘</p>
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById("stage");
+const yesBtn = document.getElementById("yesBtn");
+const noBtn = document.getElementById("noBtn");
+const title = document.getElementById("title");
+const subtitle = document.getElementById("subtitle");
+const comment = document.getElementById("comment");
+const counter = document.getElementById("counter");
+const finalLine = document.getElementById("final");
+const usPixel = document.getElementById("usPixel");
+const floatLayer = document.getElementById("floatLayer");
+
+const confettiCanvas = document.getElementById("confetti");
+const ctx = confettiCanvas.getContext("2d");
+
+function resizeCanvas() {
+  const rect = document.getElementById("card").getBoundingClientRect();
+  confettiCanvas.width = rect.width;
+  confettiCanvas.height = rect.height;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+function setPos(btn, x, y) {
+  btn.style.left = x + "px";
+  btn.style.top = y + "px";
+}
+
+function initButtons() {
+  const s = stage.getBoundingClientRect();
+  setPos(yesBtn, s.width * 0.3, s.height * 0.5);
+  setPos(noBtn, s.width * 0.6, s.height * 0.5);
+}
+initButtons();
+window.addEventListener("resize", initButtons);
+
+function moveNo() {
+  const s = stage.getBoundingClientRect();
+  const b = noBtn.getBoundingClientRect();
+
+  const maxX = s.width - b.width - 10;
+  const maxY = s.height - b.height - 10;
+
+  const x = 10 + Math.random() * maxX;
+  const y = 10 + Math.random() * maxY;
+
+  setPos(noBtn, x, y);
+}
+
+function spawnHeart() {
+  const heart = document.createElement("div");
+  heart.className = "floatHeart";
+  heart.textContent = ["💗","💞","💕","💖","💘"][Math.floor(Math.random() * 5)];
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  heart.style.left = (Math.random() * w) + "px";
+  heart.style.top = (h - 10) + "px";
+
+  floatLayer.appendChild(heart);
+  setTimeout(() => heart.remove(), 4200);
+}
+setInterval(spawnHeart, 520);
+
+function confettiBurst() {
+  resizeCanvas();
+  const pieces = [];
+  const colors = ["#ff6fae","#ffd966","#ff9aa2","#ffc1e3"];
+
+  for (let i = 0; i < 190; i++) {
+    pieces.push({
+      x: confettiCanvas.width / 2,
+      y: confettiCanvas.height / 2,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.8) * 8,
+      r: 3 + Math.random() * 4,
+      life: 80 + Math.random() * 40,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    });
+  }
+
+  function tick() {
+    ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    pieces.forEach(p => {
+      p.vy += 0.15;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life -= 1;
+
+      ctx.globalAlpha = Math.max(0, p.life / 120);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (pieces.some(p => p.life > 0)) requestAnimationFrame(tick);
+    else ctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  }
+  tick();
+}
+
+let attempts = 0;
+
+function updateComment() {
+  if (attempts === 3) comment.textContent = "Interesting choice...";
+  if (attempts === 6) comment.textContent = "wrong anwer >:(";
+  if (attempts === 9) comment.textContent = "dickhead";
+  if (attempts === 12) comment.textContent = "You are actively choosing violence";
+  if (attempts === 15) comment.textContent = "asshole 🖕";
+}
+
+function dodge() {
+  attempts += 1;
+  counter.textContent = "No attempts: " + attempts;
+  updateComment();
+  moveNo();
+}
+
+function revealUsPixel() {
+  usPixel.style.display = "block";
+  setTimeout(() => {
+    usPixel.style.opacity = "1";
+    usPixel.style.transform = "translate(-50%, -50%) scale(1)";
+  }, 50);
+}
+
+function celebrate() {
+  title.textContent = "YAYYYYY 💘";
+  subtitle.textContent = "Correct answer. Obviously.";
+  comment.textContent = "Happy Valentine’s Day ❤️";
+  finalLine.style.display = "block";
+
+  yesBtn.style.display = "none";
+  noBtn.style.display = "none";
+
+  confettiBurst();
+  revealUsPixel();
+}
+
+noBtn.addEventListener("mouseenter", dodge);
+noBtn.addEventListener("mousedown", e => { e.preventDefault(); dodge(); });
+noBtn.addEventListener("click", e => { e.preventDefault(); dodge(); });
+
+yesBtn.addEventListener("click", celebrate);
+</script>
+</body>
+</html>
